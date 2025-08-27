@@ -60,7 +60,7 @@ behavior focuses on data content, not structural metadata.
 
 **Implementation**:
 - Default (keep_index=False): Call df.reset_index(drop=True)
-- keep_index=True: Convert index to columns named '__index_level_0__', 
+- keep_index=True: Convert index to columns named '__index_level_0__',
   '__index_level_1__', etc., then reset index
 
 **Examples**:
@@ -73,7 +73,7 @@ df = pd.DataFrame({'value': [1, 2]}, index=['A', 'B'])
 # Rows: [[1], [2]]
 
 # keep_index=True: index preserved as column
-# Canonical columns: ['__index_level_0__', 'value'] 
+# Canonical columns: ['__index_level_0__', 'value']
 # Rows: [['A', 1], ['B', 2]]
 ```
 
@@ -84,7 +84,7 @@ df = pd.DataFrame({'value': [1, 2]}, index=['A', 'B'])
 **Rationale**: Column order is often incidental to data meaning. Sorting ensures
 consistent ordering regardless of DataFrame construction history.
 
-**Implementation**: 
+**Implementation**:
 ```python
 df = df.reindex(sorted(df.columns.astype(str)), axis=1)
 ```
@@ -117,15 +117,15 @@ ensures consistent representation.
 - **Rationale**: Handles missing values consistently, avoids int32/int64 variations
 - **Edge Cases**: Values exceeding Int64 range preserved as object dtype
 
-#### 2.4.2 Float Types  
+#### 2.4.2 Float Types
 - **Target**: float64 for all floating-point data
 - **Representation**: Configurable via float_mode parameter
   - 'round-trip': Use Python repr() for exact representation
   - 'decimal=1e-N': Quantize to N decimal places using Decimal arithmetic
 - **Rationale**: Eliminates float32/float64 differences, provides precision control
-- **Special Values**: 
+- **Special Values**:
   - NaN → ['null', None]
-  - +inf → ['f', 'inf'] 
+  - +inf → ['f', 'inf']
   - -inf → ['f', '-inf']
 
 **Examples**:
@@ -134,7 +134,7 @@ ensures consistent representation.
 3.14159 → ['f', '3.14159']
 1e-10 → ['f', '1e-10']
 
-# decimal=1e-12 mode  
+# decimal=1e-12 mode
 3.14159265359 → ['f', '3.141592653590']
 ```
 
@@ -185,7 +185,7 @@ pd.Timedelta('1.5 seconds') → ['td', 1500000000]
 
 **Examples**:
 ```python
-# Original categories: ['red', 'blue', 'green'] 
+# Original categories: ['red', 'blue', 'green']
 # Normalized categories: ['blue', 'green', 'red']
 # Value 'red' → ['cat', 'red']
 # Missing category → ['null', None]
@@ -228,7 +228,7 @@ type_tag indicates the semantic type.
 
 **Type Tags**:
 - 'null': Missing values
-- 'i': Integers  
+- 'i': Integers
 - 'f': Floats
 - 's': Strings
 - 'b': Booleans
@@ -296,7 +296,7 @@ enabling type-aware reconstruction if needed.
 - False: Preserve original column order
 - Use case: When column order is semantically meaningful
 
-### 4.2 keep_index (bool, default=False)  
+### 4.2 keep_index (bool, default=False)
 - Controls index handling
 - True: Materialize index as columns
 - Use case: When index contains meaningful data
@@ -356,7 +356,7 @@ Implementations MUST:
 ### 7.2 Backward Compatibility Promise
 Changes requiring new major versions:
 - Modifications to normalization rules
-- Changes to JSON document structure  
+- Changes to JSON document structure
 - Alterations to type tag semantics
 - Different default configuration values
 
