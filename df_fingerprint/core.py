@@ -1,4 +1,3 @@
-\
 from __future__ import annotations
 import json
 import math
@@ -11,7 +10,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_categorical_dtype, is_datetime64_any_dtype, is_timedelta64_dtype
+from pandas.api.types import (
+    is_categorical_dtype,
+    is_datetime64_any_dtype,
+    is_timedelta64_dtype,
+)
 from decimal import Decimal, getcontext, ROUND_HALF_EVEN
 
 from ._version import SPEC_VERSION
@@ -71,8 +74,13 @@ class Canonicalizer:
         # Convert dtypes with error handling for large integers
         # Suppress pandas cast warnings during dtype conversion
         import warnings
+
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message="invalid value encountered in cast", category=RuntimeWarning)
+            warnings.filterwarnings(
+                "ignore",
+                message="invalid value encountered in cast",
+                category=RuntimeWarning,
+            )
             try:
                 df = df.convert_dtypes()  # nullable types where possible
             except (OverflowError, TypeError):
@@ -90,7 +98,11 @@ class Canonicalizer:
             if is_datetime64_any_dtype(s):
                 # make timezone-aware UTC
                 s = pd.to_datetime(s, utc=True, errors="coerce")
-                df[c] = s.dt.tz_convert(self.tz) if s.dt.tz is not None else s.dt.tz_localize(self.tz)
+                df[c] = (
+                    s.dt.tz_convert(self.tz)
+                    if s.dt.tz is not None
+                    else s.dt.tz_localize(self.tz)
+                )
 
         return df
 
@@ -156,7 +168,7 @@ class Canonicalizer:
         elif self.float_mode.startswith("decimal="):
             getcontext().rounding = ROUND_HALF_EVEN
             q = self.decimal_quant or Decimal("1e-12")
-            d = (Decimal(str(f)).quantize(q))
+            d = Decimal(str(f)).quantize(q)
             return ["f", format(d, "f")]
         else:
             # default fallback
@@ -166,7 +178,7 @@ class Canonicalizer:
         """Vectorized encoding of an entire Series for better performance."""
         if len(s) == 0:
             return []
-            
+
         if isinstance(s.dtype, pd.CategoricalDtype):
             return self._encode_categorical_series(s)
         elif is_datetime64_any_dtype(s.dtype):
@@ -179,17 +191,19 @@ class Canonicalizer:
             return self._encode_float_series(s)
         elif pd.api.types.is_bool_dtype(s.dtype):
             return self._encode_boolean_series(s)
-        elif pd.api.types.is_string_dtype(s.dtype) or pd.api.types.is_object_dtype(s.dtype):
+        elif pd.api.types.is_string_dtype(s.dtype) or pd.api.types.is_object_dtype(
+            s.dtype
+        ):
             return self._encode_object_series(s)
         else:
             # Fallback to row-by-row for unknown types
             return [self._encode_value(v) for v in s]
-    
+
     def _encode_categorical_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for categorical series."""
         s = s.astype("category")
         s = s.cat.set_categories(sorted(map(str, s.cat.categories)))
-        
+
         # Vectorized approach: use pandas operations
         result = []
         for v in s:
@@ -198,7 +212,7 @@ class Canonicalizer:
             else:
                 result.append(["cat", str(v)])
         return result
-    
+
     def _encode_datetime_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for datetime series."""
         # Convert to UTC if not already timezone-aware
@@ -206,7 +220,7 @@ class Canonicalizer:
             s = s.dt.tz_localize(self.tz)
         else:
             s = s.dt.tz_convert(self.tz)
-        
+
         # Build result using individual timestamp processing for precision
         result = []
         for v in s:
@@ -217,7 +231,7 @@ class Canonicalizer:
                 iso = v.isoformat(timespec="microseconds").replace("+00:00", "Z")
                 result.append(["dt", iso])
         return result
-    
+
     def _encode_timedelta_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for timedelta series."""
         result = []
@@ -227,12 +241,12 @@ class Canonicalizer:
             else:
                 result.append(["td", int(v.value)])  # nanoseconds
         return result
-    
+
     def _encode_integer_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for integer series."""
         # Use pandas vectorized operations
         mask_na = pd.isna(s)
-        
+
         result = []
         for i, (is_na, val) in enumerate(zip(mask_na, s)):
             if is_na:
@@ -240,7 +254,7 @@ class Canonicalizer:
             else:
                 result.append(["i", int(val)])
         return result
-    
+
     def _encode_float_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for float series."""
         result = []
@@ -250,12 +264,12 @@ class Canonicalizer:
             else:
                 result.append(self._encode_float(float(v)))
         return result
-    
+
     def _encode_boolean_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for boolean series."""
         # Use pandas vectorized operations
         mask_na = pd.isna(s)
-        
+
         result = []
         for i, (is_na, val) in enumerate(zip(mask_na, s)):
             if is_na:
@@ -263,7 +277,7 @@ class Canonicalizer:
             else:
                 result.append(["b", bool(val)])
         return result
-    
+
     def _encode_object_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for object/string series."""
         result = []
@@ -299,7 +313,7 @@ class Canonicalizer:
         encoded_columns = {}
         for col in columns:
             encoded_columns[col] = self._encode_series_vectorized(df[col])
-        
+
         # Transpose column-wise encoding to row-wise for JSON structure
         n_rows = len(df)
         data_rows: List[List[List[Any]]] = []
@@ -320,7 +334,9 @@ class Canonicalizer:
     def hash(self, df: pd.DataFrame, algo: str = "sha256") -> Fingerprint:
         doc = self.canonicalize(df)
         # Deterministic JSON serialization
-        payload = json.dumps(doc, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        payload = json.dumps(
+            doc, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
 
         if algo.lower() == "sha256":
             h = hashlib.sha256(payload).digest()
@@ -328,6 +344,7 @@ class Canonicalizer:
         elif algo.lower() == "blake3":
             try:
                 import blake3  # type: ignore
+
                 h = blake3.blake3(payload).digest()
                 hexstr = blake3.blake3(payload).hexdigest()
                 algo = "blake3"
@@ -360,6 +377,11 @@ class Canonicalizer:
         return Fingerprint(algo=algo, hex=f"{algo}:{hexstr}", digest=h, meta=meta)
 
 
-def fingerprint(df: pd.DataFrame, *, algo: str = "sha256", canonicalizer: Optional[Canonicalizer] = None) -> Fingerprint:
+def fingerprint(
+    df: pd.DataFrame,
+    *,
+    algo: str = "sha256",
+    canonicalizer: Optional[Canonicalizer] = None,
+) -> Fingerprint:
     canon = canonicalizer or Canonicalizer()
     return canon.hash(df, algo=algo)
