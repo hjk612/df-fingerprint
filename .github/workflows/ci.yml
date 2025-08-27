@@ -29,8 +29,7 @@ jobs:
         
     - name: Lint with black
       run: |
-        echo "Temporarily skipping black check"
-        # black --check df_fingerprint tests
+        black --check df_fingerprint tests
         
     - name: Type check with mypy
       run: |

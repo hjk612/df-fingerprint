@@ -205,7 +205,7 @@ class Canonicalizer:
         s = s.cat.set_categories(sorted(map(str, s.cat.categories)))
 
         # Vectorized approach: use pandas operations
-        result = []
+        result: List[List[Any]] = []
         for v in s:
             if pd.isna(v):
                 result.append(["null", None])
@@ -222,7 +222,7 @@ class Canonicalizer:
             s = s.dt.tz_convert(self.tz)
 
         # Build result using individual timestamp processing for precision
-        result = []
+        result: List[List[Any]] = []
         for v in s:
             if pd.isna(v):
                 result.append(["null", None])
@@ -234,7 +234,7 @@ class Canonicalizer:
 
     def _encode_timedelta_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for timedelta series."""
-        result = []
+        result: List[List[Any]] = []
         for v in s:
             if pd.isna(v):
                 result.append(["null", None])
@@ -247,7 +247,7 @@ class Canonicalizer:
         # Use pandas vectorized operations
         mask_na = pd.isna(s)
 
-        result = []
+        result: List[List[Any]] = []
         for i, (is_na, val) in enumerate(zip(mask_na, s)):
             if is_na:
                 result.append(["null", None])
@@ -257,7 +257,7 @@ class Canonicalizer:
 
     def _encode_float_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for float series."""
-        result = []
+        result: List[List[Any]] = []
         for v in s:
             if pd.isna(v):
                 result.append(["null", None])
@@ -270,7 +270,7 @@ class Canonicalizer:
         # Use pandas vectorized operations
         mask_na = pd.isna(s)
 
-        result = []
+        result: List[List[Any]] = []
         for i, (is_na, val) in enumerate(zip(mask_na, s)):
             if is_na:
                 result.append(["null", None])
@@ -280,7 +280,7 @@ class Canonicalizer:
 
     def _encode_object_series(self, s: pd.Series) -> List[List[Any]]:
         """Vectorized encoding for object/string series."""
-        result = []
+        result: List[List[Any]] = []
         for v in s:
             if pd.isna(v):
                 result.append(["null", None])
